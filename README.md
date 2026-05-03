@@ -1,7 +1,172 @@
 # Tweet_disaster_detection
 A projetct in Kaggle
 
+# Step 1 to Step 3 README
 
+This section of the repository covers the earlier project notebooks:
+
+- `Group17_Step1_Step2.ipynb`
+- `Group17_Step3_Transformers.ipynb`
+
+These notebooks build the shared processed dataset, run the TF-IDF baselines, and produce the first round of transformer fine-tuning results.
+
+## Notebook Location and Paths
+
+These notebooks were developed in **Google Colab** with the project files placed in a shared Google Drive folder.
+
+Shared Google Drive project folder:
+
+https://drive.google.com/drive/u/0/folders/1eVBiAIEmZzN_E4e6qNbQrPPjqjbVhdFr
+
+When the notebooks are executed, Google Drive is mounted at `/content/drive` and the project root used by the cells is:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+```
+
+## What Each Notebook Does
+
+### `Group17_Step1_Step2.ipynb`
+
+This notebook covers:
+
+1. **Data loading** of the raw Kaggle files (`train.csv`, `test.csv`)
+2. **Exploratory Data Analysis** including shape checks, label distribution, and duplicate detection
+3. **Preprocessing pipeline** that produces the shared processed CSVs used by all later notebooks
+4. **TF-IDF Baselines** with Logistic Regression, Linear SVM, and Multinomial Naive Bayes
+5. **Results summary table** comparing the three baseline models
+
+The processed files written here are reused by every later step:
+
+- `train_processed.csv`
+- `test_processed.csv`
+
+### `Group17_Step3_Transformers.ipynb`
+
+This notebook covers the first round of transformer fine-tuning:
+
+1. **DistilBERT** fine-tuning
+2. **RoBERTa** fine-tuning
+3. **BERTweet** fine-tuning
+4. **Metadata ablation** on BERTweet, comparing text only vs. text + keyword vs. text + keyword + location
+
+This notebook depends on the processed CSVs produced by Step 1/2.
+
+## Environment Setup
+
+Both notebooks were prepared for **Google Colab** with a GPU runtime.
+
+Step 1/2 uses standard scientific Python libraries (`pandas`, `numpy`, `scikit-learn`, `matplotlib`, `seaborn`, `nltk`) that are pre-installed in Colab.
+
+Step 3 additionally installs the HuggingFace stack inside the notebook:
+
+```python
+!pip install transformers datasets -q
+```
+
+Both notebooks mount Google Drive before any data cell runs:
+
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+## Device and System Used
+
+These notebooks were developed and run on the following setup:
+
+- Platform: **Google Colab**
+- Step 1/2 runs on the default Colab CPU runtime
+- Step 3 runs on a Colab **GPU** runtime (CUDA is required for transformer fine-tuning)
+
+## Expected Data Layout
+
+The notebooks assume the shared Google Drive folder is organized as:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+├── input/
+│   ├── train.csv
+│   └── test.csv
+└── data/
+    ├── train_processed.csv     # produced by Step 1/2
+    └── test_processed.csv      # produced by Step 1/2
+```
+
+The raw Kaggle files live under `input/`.
+The processed files written by Step 1/2 live under `data/` and are read by Step 3.
+
+In Step 1/2, the directory variable points at the raw Kaggle inputs:
+
+```python
+DATA_DIR = '/content/drive/MyDrive/CS544-Group17-Project/input/'
+```
+
+In Step 3, the directory variables are split between processed and raw:
+
+```python
+DATA_DIR  = '/content/drive/MyDrive/CS544-Group17-Project/data/'
+INPUT_DIR = '/content/drive/MyDrive/CS544-Group17-Project/input/'
+```
+
+## How to Run the Code
+
+Run the notebooks in this order:
+
+1. `Group17_Step1_Step2.ipynb`
+2. `Group17_Step3_Transformers.ipynb`
+
+Each notebook is designed to be executed with **Run All**.
+
+The order matters because Step 3 reads the `train_processed.csv` and `test_processed.csv` files written by Step 1/2.
+
+## How the Results Are Generated
+
+### Step 1/2 Results
+
+Step 1/2 first runs the preprocessing pipeline on the raw Kaggle data and writes the cleaned CSVs back to Google Drive at `/content/drive/MyDrive/CS544-Group17-Project/data/`.
+
+It then evaluates three TF-IDF + classical model combinations with stratified cross-validation:
+
+- TF-IDF + Logistic Regression
+- TF-IDF + Linear SVM
+- TF-IDF + Multinomial Naive Bayes
+
+The strongest baseline is retrained on the full training set, and a Kaggle submission file is produced in the notebook working directory:
+
+```text
+submission_baseline.csv
+```
+
+### Step 3 Results
+
+Step 3 fine-tunes three transformer backbones on the processed data:
+
+- DistilBERT
+- RoBERTa
+- BERTweet
+
+It also runs the BERTweet metadata ablation, comparing:
+
+- text only
+- text + keyword
+- text + keyword + location
+
+The selected transformer model produces a Kaggle submission file in the notebook working directory:
+
+```text
+submission_transformer.csv
+```
+
+## Summary
+
+These two notebooks form the earlier foundation of the project:
+
+- Step 1/2 produces the shared processed dataset and the classical-baseline reference point.
+- Step 3 produces the first transformer results and motivates the backbone choices used in the later Step 6 to Step 9 pipeline.
+
+Together they generate the processed inputs and the early baseline scores that every subsequent notebook depends on.
+-------
 
 
 
