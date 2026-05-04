@@ -166,6 +166,235 @@ These two notebooks form the earlier foundation of the project:
 - Step 3 produces the first transformer results and motivates the backbone choices used in the later Step 6 to Step 9 pipeline.
 
 Together they generate the processed inputs and the early baseline scores that every subsequent notebook depends on.
+
+
+
+# Step 3.2 Next Steps README
+
+This section documents the notebook:
+
+- `Group17_Step3_2_NextSteps_fixed.ipynb`
+
+This notebook extends the Step 3 transformer work.
+It tests practical next-step improvements around threshold tuning, soft voting, class weighting, and error analysis.
+
+## Notebook Location and Paths
+
+The notebook is expected to live in the **repository root**:
+
+- `./Group17_Step3_2_NextSteps_fixed.ipynb`
+
+The notebook was prepared in **Google Colab** with the project files placed in the shared Google Drive project folder:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+```
+
+When executed, Google Drive is mounted at `/content/drive`, and the project root used by the cells is:
+
+```python
+PROJECT_DIR = '/content/drive/MyDrive/CS544-Group17-Project/'
+INPUT_DIR = PROJECT_DIR + 'input/'
+DATA_DIR = PROJECT_DIR + 'data/'
+NEW_OUTPUT_DIR = PROJECT_DIR + 'step3_2_next_steps_artifacts/'
+```
+
+## What This Notebook Does
+
+### `Group17_Step3_2_NextSteps_fixed.ipynb`
+
+This notebook covers:
+
+1. **Threshold tuning** for the TF-IDF Logistic Regression baseline
+2. **BERTweet fine-tuning** using `vinai/bertweet-base`
+3. **Threshold tuning** for the BERTweet validation probabilities
+4. **Soft-voting ensemble search** between Logistic Regression and BERTweet
+5. **Class weight adjustment** to test whether minority-class recall improves
+6. **Error analysis** comparing baseline-only errors, transformer-only errors, and shared errors
+
+The notebook is designed as a lightweight follow-up to Step 3.
+
+## Environment Setup
+
+The notebook was prepared for **Google Colab** with a GPU runtime.
+
+The optional install cell is included near the top of the notebook:
+
+```python
+# !pip install -q transformers datasets sentencepiece emoji==0.6.0
+```
+
+The main Python libraries used are:
+
+- `pandas`
+- `numpy`
+- `torch`
+- `scikit-learn`
+- `transformers`
+- `datasets`
+- `sentencepiece`
+- `emoji`
+
+The notebook also mounts Google Drive before loading project data:
+
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+## Device and System Used
+
+This notebook was developed and run on the following setup:
+
+- Platform: **Google Colab**
+- Runtime: **GPU**
+- Colab GPU type recorded in notebook metadata: **T4**
+- Model backbone: `vinai/bertweet-base`
+
+CUDA is strongly recommended because the notebook fine-tunes BERTweet twice:
+
+- default training
+- class-weighted training
+
+## Expected Data Layout
+
+The notebook assumes the processed files from Step 1/2 already exist:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+├── input/
+│   ├── train.csv
+│   └── test.csv
+└── data/
+    ├── train_processed.csv
+    └── test_processed.csv
+```
+
+The required input paths are:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/data/train_processed.csv
+/content/drive/MyDrive/CS544-Group17-Project/data/test_processed.csv
+```
+
+The notebook creates its output folder automatically:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/step3_2_next_steps_artifacts/
+```
+
+## How to Run the Code
+
+Run this notebook after Step 1/2 and the first Step 3 transformer notebook:
+
+1. `Group17_Step1_Step2.ipynb`
+2. `Group17_Step3_Transformers.ipynb`
+3. `Group17_Step3_2_NextSteps_fixed.ipynb`
+
+The notebook is designed to be executed with **Run All**.
+
+The order matters because Step 3.2 reads the processed CSV files written by Step 1/2 and builds on the baseline and BERTweet findings from Step 3.
+
+## How the Results Are Generated
+
+### Baseline Threshold Tuning
+
+The notebook trains a TF-IDF + Logistic Regression baseline on an 80/20 stratified split of the processed training data.
+It then sweeps thresholds from 0.05 to 0.95 and selects the threshold with the best validation F1 score.
+
+The best recorded Logistic Regression result is:
+
+- Threshold: `0.43`
+- F1: `0.754177`
+- Precision: `0.765751`
+- Recall: `0.742947`
+- Accuracy: `0.794137`
+
+### BERTweet Threshold Tuning
+
+The notebook fine-tunes `vinai/bertweet-base` for 3 epochs on the same split.
+It then tunes the classification threshold on validation probabilities.
+
+The best recorded BERTweet default result is:
+
+- Threshold: `0.41`
+- F1: `0.809562`
+- Precision: `0.823339`
+- Recall: `0.796238`
+- Accuracy: `0.840773`
+
+### Soft-Voting Ensemble
+
+The notebook searches ensemble weights between the Logistic Regression probabilities and the BERTweet probabilities.
+The best recorded ensemble is:
+
+```text
+ensemble = 0.95 * BERTweet + 0.05 * LogisticRegression
+```
+
+with:
+
+- Threshold: `0.53`
+- F1: `0.810373`
+- Precision: `0.838926`
+- Recall: `0.783699`
+- Accuracy: `0.844104`
+
+### Class Weight Adjustment
+
+The notebook reruns BERTweet with balanced class weights:
+
+```text
+class 0 weight = 0.870107
+class 1 weight = 1.175480
+```
+
+The class-weighted run did not improve over the default BERTweet run on this validation split:
+
+- Default BERTweet F1: `0.809562`
+- Class-weighted BERTweet F1: `0.805423`
+
+### Error Analysis
+
+The notebook uses the default BERTweet model for deeper validation-set error analysis.
+The recorded comparison is:
+
+- both correct: `1116`
+- both wrong: `163`
+- baseline only wrong: `146`
+- transformer only wrong: `76`
+
+This analysis helps identify where the transformer improves over the classical baseline and where both model families still fail.
+
+## Expected Outputs
+
+Main files written to `step3_2_next_steps_artifacts/`:
+
+- `baseline_threshold_curve.csv`
+- `baseline_threshold_summary.json`
+- `transformer_default_history.csv`
+- `transformer_default_threshold_curve.csv`
+- `transformer_class_weight_history.csv`
+- `transformer_class_weight_threshold_curve.csv`
+- `class_weight_comparison.csv`
+- `ensemble_weight_threshold_search.csv`
+- `submission_ensemble_soft_vote.csv`
+- `error_comparison_summary.csv`
+- `error_cases_baseline_only_wrong.csv`
+- `error_cases_transformer_only_wrong.csv`
+- `error_cases_both_wrong.csv`
+- `baseline_false_positives_val.csv`
+- `baseline_false_negatives_val.csv`
+- `transformer_false_positives_val.csv`
+- `transformer_false_negatives_val.csv`
+- `step3_2_next_steps_summary.json`
+
+## Summary
+
+This notebook confirms that most of the Step 3.2 improvement comes from BERTweet and threshold-aware probability use.
+The Logistic Regression baseline remains useful for comparison and error analysis, but contributes only a small weight in the best soft-voting ensemble.
+
+The Step 3.2 results bridge the earlier Step 3 transformer experiments and the later Step 6 to Step 9 fusion pipeline by showing that threshold tuning, OOF-style probability thinking, and model complementarity are worth pursuing further.
 -------
 
 
