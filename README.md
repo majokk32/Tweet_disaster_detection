@@ -395,6 +395,412 @@ This notebook confirms that most of the Step 3.2 improvement comes from BERTweet
 The Logistic Regression baseline remains useful for comparison and error analysis, but contributes only a small weight in the best soft-voting ensemble.
 
 The Step 3.2 results bridge the earlier Step 3 transformer experiments and the later Step 6 to Step 9 fusion pipeline by showing that threshold tuning, OOF-style probability thinking, and model complementarity are worth pursuing further.
+
+
+# Step 4 to Step 5 README
+
+This section documents the notebooks:
+
+- `step4_metadata_ablation_artifacts.ipynb`
+- `step5_metadata_injection.ipynb`
+
+These notebooks cover the metadata-focused part of the project. Step 4 packages additional midterm artifacts and reruns the BERTweet metadata ablation. Step 5 then tests whether `keyword` and `location` metadata become more useful when they are injected through more structured modeling strategies.
+
+The official Step 5 results described here are from the local `nlp` environment run, which is the version aligned with the submitted final report.
+
+## Notebook Location and Paths
+
+Both notebooks are expected to live in the **repository root**:
+
+- `./step4_metadata_ablation_artifacts.ipynb`
+- `./step5_metadata_injection.ipynb`
+
+### Step 4 Paths
+
+Step 4 was prepared in **Google Colab** with the project files placed in the shared Google Drive project folder:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+```
+
+When executed, Google Drive is mounted at `/content/drive`, and the project root used by the cells is:
+
+```python
+PROJECT_DIR = '/content/drive/MyDrive/CS544-Group17-Project/'
+INPUT_DIR = PROJECT_DIR + 'input/'
+DATA_DIR = PROJECT_DIR + 'data/'
+NEW_OUTPUT_DIR = PROJECT_DIR + 'step4_midterm_artifacts/'
+```
+
+### Step 5 Paths
+
+Step 5 was prepared for a local repository checkout. When the notebook is executed from the repository root, the path variables resolve to:
+
+```python
+PROJECT_DIR = Path.cwd()
+DATA_DIR = PROJECT_DIR / 'data'
+STEP5_DIR = PROJECT_DIR / 'step5_metadata_injection'
+OUTPUT_DIR = STEP5_DIR / 'step5_outputs'
+RUNS_DIR = OUTPUT_DIR / 'runs'
+```
+
+The notebook stores every completed run/fold under:
+
+```text
+./step5_metadata_injection/step5_outputs/runs/{run_id}/fold_{k}/
+```
+
+## What Each Notebook Does
+
+### `step4_metadata_ablation_artifacts.ipynb`
+
+This notebook packages the additional Step 4 artifacts prepared for TA review. It is designed as a clean Colab runbook that leaves the earlier Step 1 to Step 3 notebooks unchanged.
+
+It covers:
+
+1. **Colab setup** with Google Drive mounting and transformer dependency installation
+2. **Shared path setup** for raw inputs, processed data, and Step 4 artifacts
+3. **Baseline artifact generation** for TF-IDF classical models
+4. **Validation diagnostics** including confusion matrix and false-positive/false-negative files
+5. **BERTweet metadata ablation** comparing text only, text + keyword, and text + keyword + location
+6. **Artifact verification** to confirm every expected output file exists
+7. **Summary preview** of the key CSV and JSON outputs
+
+### `step5_metadata_injection.ipynb`
+
+This notebook runs the main metadata-injection study. It asks whether the Kaggle metadata fields can improve BERTweet beyond the Step 4 text-only anchor when the metadata is injected more carefully.
+
+It covers:
+
+1. **Metadata cleaning** for `location`, `country_norm`, and junk-location flags
+2. **Pre-EDA diagnostics** for metadata coverage and keyword/text overlap
+3. **A 12-run experiment matrix** built from structured `RunSpec` objects
+4. **Method A: tokenizer-pair metadata input**
+5. **Method B: natural-language metadata templates**
+6. **Method C: late-fusion metadata head**
+7. **Fold-local vocabularies** to avoid validation leakage
+8. **5-fold stratified cross-validation** with cached fold-level metrics
+9. **Paired delta analysis** against the `anchor_text` baseline
+10. **Report-ready tables and figures** for the final writeup
+
+## Environment Setup
+
+### Step 4 Environment
+
+Step 4 was prepared for **Google Colab** with a GPU runtime.
+
+The notebook installs the required transformer packages near the top:
+
+```python
+pip install transformers==4.46.3 datasets sentencepiece emoji==0.6.0
+```
+
+The main Python libraries used are:
+
+- `pandas`
+- `numpy`
+- `scikit-learn`
+- `nltk`
+- `torch`
+- `transformers`
+- `datasets`
+- `sentencepiece`
+- `emoji`
+
+The notebook also mounts Google Drive before loading project data:
+
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+### Step 5 Environment
+
+Step 5 was prepared for a local Conda environment named `nlp`.
+
+Create and activate the environment:
+
+```bash
+conda create -n nlp python=3.10 -y
+conda activate nlp
+```
+
+Install the main packages:
+
+```bash
+pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+pip install transformers==4.46.3 pandas==2.3.3 scikit-learn==1.7.2 matplotlib==3.10.8
+pip install sentencepiece==0.2.1 emoji==0.6.0 datasets==4.8.4 accelerate==1.13.0
+pip install notebook==7.5.5 jupyterlab==4.5.6 ipywidgets==8.1.8
+```
+
+Core package versions used for the official Step 5 run:
+
+```text
+python              3.10.20
+torch               2.4.1+cu121
+transformers        4.46.3
+pandas              2.3.3
+scikit-learn        1.7.2
+matplotlib          3.10.8
+sentencepiece       0.2.1
+emoji               0.6.0
+datasets            4.8.4
+accelerate          1.13.0
+notebook            7.5.5
+jupyterlab          4.5.6
+ipywidgets          8.1.8
+```
+
+The Step 5 notebook sets `MPLCONFIGDIR` inside `step5_metadata_injection/step5_outputs/.matplotlib` so matplotlib does not write to a system-level config directory.
+
+## Device and System Used
+
+### Step 4 Device
+
+Step 4 was developed and run on the following setup:
+
+- Platform: **Google Colab**
+- Runtime: **GPU**
+- Colab GPU type recorded in notebook metadata: **H100**
+- Python recorded in notebook metadata: **3.12**
+- Model backbone: `vinai/bertweet-base`
+
+### Step 5 Device
+
+Step 5 was developed and run on the following setup:
+
+- Operating system: local Linux workstation
+- Conda environment: `nlp`
+- Python: `3.10.20`
+- PyTorch: `2.4.1+cu121`
+- GPU: `NVIDIA RTX 4070 Ti`
+- Device reported by notebook: `cuda`
+- Model backbone: `vinai/bertweet-base`
+- Random seed: `42`
+
+CUDA is required for the full Step 5 matrix because it fine-tunes BERTweet for 12 runs across 5 folds.
+
+## Expected Data Layout
+
+### Step 4 Data Layout
+
+Step 4 assumes the shared Google Drive folder is organized as:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+|-- input/
+|   |-- train.csv
+|   `-- test.csv
+|-- data/
+|   |-- train_processed.csv
+|   `-- test_processed.csv
+`-- step4_midterm_artifacts/
+```
+
+If the processed files already exist under `data/`, the notebook loads them. Otherwise, it rebuilds the required processed files from the raw Kaggle inputs under `input/`.
+
+### Step 5 Data Layout
+
+Step 5 assumes the processed files from the earlier notebooks have been generated or copied into the local repository checkout:
+
+```text
+./data/train_processed.csv
+./data/test_processed.csv
+```
+
+These files are produced by `Group17_Step1_Step2.ipynb`. If the `data/` folder is not present after cloning the repository, run the earlier preprocessing notebook first or copy the two processed CSVs into `./data/` before opening Step 5.
+
+The notebook creates its output directory automatically:
+
+```text
+./step5_metadata_injection/step5_outputs/
+```
+
+## How to Run the Code
+
+Run Step 4 after the Step 1 to Step 3 processed data has been created:
+
+1. `Group17_Step1_Step2.ipynb`
+2. `Group17_Step3_Transformers.ipynb`
+3. `step4_metadata_ablation_artifacts.ipynb`
+
+Run Step 5 after Step 4 or after confirming that the processed CSVs exist locally:
+
+4. `step5_metadata_injection.ipynb`
+
+### Running Step 4
+
+1. Open `step4_metadata_ablation_artifacts.ipynb` in Google Colab.
+2. Select a GPU runtime.
+3. Run the Colab setup cell and mount Google Drive when prompted.
+4. Confirm that the shared project folder exists at:
+
+```text
+/content/drive/MyDrive/CS544-Group17-Project/
+```
+
+5. Run the notebook with **Run All**.
+6. Confirm that the output verification section prints `[OK]` for every expected file.
+
+### Running Step 5
+
+1. Activate the local environment:
+
+```bash
+conda activate nlp
+```
+
+2. Start Jupyter:
+
+```bash
+jupyter lab
+```
+
+3. Open `step5_metadata_injection.ipynb` from the repository root.
+4. Confirm that `DATA_DIR` points to `./data/`.
+5. Run the setup, data loading, metadata cleaning, run specification, and function-definition cells.
+6. Use the full-matrix switches:
+
+```python
+RUN_PRE_EDA = True
+RUN_SMOKE = False
+RUN_FULL_MATRIX = True
+RUN_CONDITIONAL_EXPERIMENTS = False
+RESUME = True
+FORCE_RERUN = False
+FORCE_RUN_IDS = []
+```
+
+7. Run the full matrix section only when CUDA is available.
+8. Run the cache rebuild and report-ready sections after training. These sections regenerate tables and figures from cached fold results without retraining.
+
+The notebook is resumable. If training is interrupted, rerun with `RESUME=True`; completed folds with matching config hashes are skipped.
+
+## How the Results Are Generated
+
+### Step 4 Results
+
+Step 4 first regenerates the baseline review artifacts. The baseline pipeline uses cleaned tweet text, TF-IDF features, and 5-fold stratified cross-validation to compare:
+
+- Logistic Regression
+- Linear SVM
+- Multinomial Naive Bayes
+
+Logistic Regression is then used for validation diagnostics, including the classification report, confusion matrix, false-positive examples, false-negative examples, and top weighted TF-IDF features.
+
+Step 4 then trains and evaluates three BERTweet metadata-ablation settings:
+
+- `bertweet_text`
+- `bertweet_text_keyword`
+- `bertweet_text_keyword_location`
+
+The Step 4 BERTweet settings are:
+
+- Seed: `42`
+- Epochs: `3`
+- Batch size: `16`
+- Learning rate: `2e-5`
+- Model: `vinai/bertweet-base`
+
+The key Step 4 ablation results are:
+
+```text
+BERTweet text + keyword + location: F1 = 0.8078
+BERTweet text only:                F1 = 0.8063
+BERTweet text + keyword:           F1 = 0.8060
+```
+
+The metadata improvement in Step 4 was very small, which motivated the more careful Step 5 metadata-injection study.
+
+### Step 5 Results
+
+Step 5 uses `vinai/bertweet-base`, 5-fold stratified cross-validation, seed `42`, 3 epochs, batch size `16`, and `F1_pos` as the primary metric. `F1_pos` is the binary F1 score for the disaster class (`target=1`).
+
+The full Step 5 matrix contains 12 planned runs:
+
+```text
+anchor_text      text-only BERTweet anchor
+A_kw             tokenizer-pair input with keyword
+A_kw_loc         tokenizer-pair input with keyword and cleaned location
+B_kw             natural-language metadata template with keyword
+B_kw_loc         natural-language metadata template with keyword and cleaned location
+C_head_only      late-fusion head control without active metadata embeddings
+C_kw             late-fusion keyword feature
+C_kw_loc         late-fusion keyword and cleaned-location features
+C_kw_loc_raw     late-fusion keyword and raw-location-derived features
+C_loc            late-fusion location-only feature
+C_kw_mask        late-fusion keyword/location with keyword masked from text
+A_kw_country     tokenizer-pair input with keyword and normalized country
+```
+
+For every `run_id` and fold, the notebook writes validation predictions, metrics, and a configuration hash. The aggregation stage rebuilds:
+
+- per-run cross-validation summaries
+- per-fold metrics
+- paired fold deltas against `anchor_text`
+- report-ready tables, figures, and markdown snippets
+
+The official local Step 5 matrix found no reliable metadata improvement:
+
+```text
+anchor_text F1_pos = 0.8061
+best contender B_kw F1_pos = 0.8065
+delta vs anchor = +0.0004
+positive folds = 2 / 5
+decision = noise
+```
+
+The Step 5 conclusion is that the available `keyword` and `location` metadata did not produce a consistent practical gain over the text-only BERTweet anchor under the tested injection strategies.
+
+## Expected Outputs
+
+### Step 4 Outputs
+
+Step 4 writes the following files to `step4_midterm_artifacts/`:
+
+- `baseline_cv_summary.csv`
+- `baseline_validation_report.json`
+- `baseline_confusion_matrix.csv`
+- `baseline_false_positives.csv`
+- `baseline_false_negatives.csv`
+- `baseline_top_positive_features.csv`
+- `baseline_top_negative_features.csv`
+- `transformer_cv_summary.csv`
+- `bertweet_ablation_summary.csv`
+- `transformer_fold_metrics.csv`
+- `transformer_run_metadata.json`
+- `submission_transformer.csv`
+
+### Step 5 Outputs
+
+Step 5 writes fold-level outputs under `step5_metadata_injection/step5_outputs/runs/{run_id}/fold_{k}/`:
+
+- `metrics.json`
+- `val_preds.csv`
+- `config_hash.txt`
+
+It also writes summary and report-ready outputs:
+
+- `step5_pre_eda.json`
+- `step5_run_metadata.json`
+- `step5_cv_summary.csv`
+- `step5_fold_metrics.csv`
+- `step5_paired_deltas.csv`
+- `report_ready/step5_report_main_summary.csv`
+- `report_ready/step5_report_paired_summary.csv`
+- `report_ready/step5_report_q_table.csv`
+- `report_ready/step5_report_delta_matrix.csv`
+- `report_ready/step5_f1_pos_comparison.png`
+- `report_ready/step5_paired_delta_heatmap.png`
+- `report_ready/step5_report_snippets.md`
+
+## Summary
+
+Step 4 confirms that simple BERTweet metadata concatenation gives only a very small improvement over text-only BERTweet. Step 5 tests more structured metadata-injection methods and finds that none produce a reliable practical gain over the text-only anchor in the official local run.
+
+Together, these notebooks support the final report's conclusion that later improvements should come from stronger backbones, threshold-aware probability use, and model fusion rather than additional metadata engineering alone.
+
 -------
 
 
